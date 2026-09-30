@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>간단한 역재생 사이트</title>
+  <style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR', Arial;margin:18px;color:#111}
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    button{padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
+    button.primary{background:#0b74de;color:#fff;border-color:#0b74de}
+    input[type=range]{width:160px}
+    canvas{border:1px solid #ddd;border-radius:6px;width:100%;height:120px;background:#fafafa}
+    .hidden{display:none}
+    .row{display:flex;gap:8px;align-items:center}
+    label{font-size:14px}
+    footer{margin-top:14px;color:#666;font-size:13px}
+  </style>
+</head>
+<body>
+  <h1>역재생 실험 페이지</h1>
+  <p>오디오 파일 업로드하거나 직접 녹음하고 ▶ 재생 / 역재생 / 재생속도 설정을 테스트하세요.</p>
+
+  <div class="controls">
+    <input id="file" type="file" accept="audio/*" />
+    <button id="recordBtn">녹음 시작</button>
+    <button id="playToggle" class="primary" disabled>재생 시작</button>
+    <div class="row">
+      <label for="speed">재생 속도</label>
+      <input id="speed" type="range" min="0.25" max="2" step="0.05" value="1" />
+      <span id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div id="reverseArea"></div>
+
+  <canvas id="wave" width="1024" height="120"></canvas>
+
+  <div style="margin-top:10px">
+    <button id="downloadReverse" class="hidden">역버전 다운로드 (wav)</button>
+    <button id="downloadOrig" class="hidden">원본 다운로드 (wav)</button>
+  </div>
+
+  <footer>간단한 데모: 브라우저의 WebAudio / MediaRecorder 를 사용합니다. (Chrome/Edge/Firefox 권장)</footer>
+
+<script>
+(async function(){
+  const fileInput = document.getElementById('file');
+  const recordBtn = document.getElementById('recordBtn');
+  const playToggle = document.getElementById('playToggle');
+  const reverseArea = document.getElementById('reverseArea');
+  const speed = document.getElementById('speed');
+  const speedLabel = document.getElementById('speedLabel');
+  const canvas = document.getElementById('wave');
+  const ctx = canvas.getContext('2d');
+  const downloadReverse = document.getElementById('downloadReverse');
+  const downloadOrig = document.getElementById('downloadOrig');
+
+  let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let buffer = null; // AudioBuffer of original audio
+  let reversedBuffer = null; // AudioBuffer reversed
+  let source = null;
+  let isPlaying = false;
+  let mediaRecorder = null;
+  let chunks = [];
+
+  function enableControls(){
+    playToggle.disabled = !buffer;
+    if(buffer) playToggle.textContent = isPlaying ? '정지' : '재생 시작';
+  }
+
+  function drawWave(buf){
+    const ch = buf.numberOfChannels>0?buf.getChannelData(0):new Float32Array(0);
+    const w = canvas.width; const h = canvas.height; ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#fafafa'; ctx.fillRect(0,0,w,h);
+    ctx.lineWidth = 1; ctx.strokeStyle = '#0b74de'; ctx.beginPath();
+    const step = Math.ceil(ch.length / w);
+    for(let i=0;i<w;i++){
+      const start = i*step; let sum=0, cnt=0;
+      for(let j=0;j<step && (start+j)<ch.length;j++){ sum += Math.abs(ch[start+j]); cnt++; }
+      const v = cnt? (sum/cnt) : 0;
+      const y = (1 - v) * (h/2);
+      if(i===0) ctx.moveTo(i,y); else ctx.lineTo(i,y);
+    }
+    ctx.stroke();
+  }
+
+  function makeReversedAudioBuffer(orig){
+    const channels = orig.numberOfChannels;
+    const length = orig.length;
+    const sampleRate = orig.sampleRate;
+    const rb = audioCtx.createBuffer(channels, length, sampleRate);
+    for(let ch=0; ch<channels; ch++){
+      const o = orig.getChannelData(ch);
+      const r = rb.getChannelData(ch);
+      for(let i=0;i<length;i++) r[i] = o[length - 1 - i];
+    }
+    return rb;
+  }
+
+  function stopSource(){
+    if(source){ try{ source.stop(); }catch(e){} source.disconnect(); source=null; }
+    isPlaying=false; enableControls();
+  }
+
+  function playBuffer(buf){
+    stopSource();
+    source = audioCtx.createBufferSource();
+    source.buffer = buf;
+    source.playbackRate.value = parseFloat(speed.value);
+    source.connect(audioCtx.destination);
+    source.onended = ()=>{ isPlaying=false; enableControls(); }
+    source.start(0);
+    isPlaying=true; enableControls();
+  }
+
+  function createDownloadWav(abuffer){
+    // basic interleaved 16-bit PCM WAV builder
+    const numChannels = abuffer.numberOfChannels;
+    const sampleRate = abuffer.sampleRate;
+    const length = abuffer.length * numChannels * 2;
+    const buffer2 = new ArrayBuffer(44 + abuffer.length * numChannels * 2);
+    const view = new DataView(buffer2);
+    function writeString(view, offset, string){ for(let i=0;i<string.length;i++) view.setUint8(offset+i,string.charCodeAt(i)); }
+    writeString(view,0,'RIFF'); view.setUint32(4,36 + abuffer.length * numChannels * 2, true);
+    writeString(view,8,'WAVE'); writeString(view,12,'fmt '); view.setUint32(16,16,true);
+    view.setUint16(20,1,true); view.setUint16(22,numChannels,true); view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate * numChannels * 2,true); view.setUint16(32,numChannels * 2,true); view.setUint16(34,16,true);
+    writeString(view,36,'data'); view.setUint32(40, abuffer.length * numChannels * 2, true);
+    // write PCM
+    let offset=44;
+    for(let i=0;i<abuffer.length;i++){
+      for(let ch=0; ch<numChannels; ch++){
+        const samples = abuffer.getChannelData(ch);
+        let s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+    return new Blob([view], {type:'audio/wav'});
+  }
+
+  // file load
+  fileInput.addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const ab = await f.arrayBuffer();
+    buffer = await audioCtx.decodeAudioData(ab.slice(0));
+    reversedBuffer = makeReversedAudioBuffer(buffer);
+    drawWave(buffer);
+    reverseArea.innerHTML = '';
+    const revBtn = document.createElement('button');
+    revBtn.textContent = '역 재생';
+    revBtn.addEventListener('click', ()=>{ playBuffer(reversedBuffer); });
+    reverseArea.appendChild(revBtn);
+
+    // show download buttons
+    downloadReverse.classList.remove('hidden');
+    downloadOrig.classList.remove('hidden');
+    downloadOrig.onclick = ()=>{
+      const blob = createDownloadWav(buffer);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='original.wav'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    downloadReverse.onclick = ()=>{
+      const blob = createDownloadWav(reversedBuffer);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='reversed.wav'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    enableControls();
+  });
+
+  // play / stop toggle for original buffer
+  playToggle.addEventListener('click', ()=>{
+    if(!buffer) return;
+    if(isPlaying){ stopSource(); }
+    else{ playBuffer(buffer); }
+  });
+
+  // speed control
+  speed.addEventListener('input', ()=>{
+    speedLabel.textContent = parseFloat(speed.value).toFixed(2) + 'x';
+    if(source) source.playbackRate.value = parseFloat(speed.value);
+  });
+
+  // recording
+  recordBtn.addEventListener('click', async ()=>{
+    if(recordBtn.dataset.recording === '1'){
+      // stop
+      mediaRecorder.stop();
+      recordBtn.dataset.recording = '0';
+      recordBtn.textContent = '녹음 시작';
+      return;
+    }
+    // start recording
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+      mediaRecorder.ondataavailable = (e)=>chunks.push(e.data);
+      mediaRecorder.onstop = async ()=>{
+        const blob = new Blob(chunks, {type:'audio/webm'});
+        const ab = await blob.arrayBuffer();
+        try{ buffer = await audioCtx.decodeAudioData(ab.slice(0)); }
+        catch(err){
+          // some browsers need audioCtx.createMediaStreamSource -> record as wav; fallback: decode webm
+          const fileReader = new FileReader();
+          fileReader.onload = async ()=>{
+            const arr = fileReader.result;
+            buffer = await audioCtx.decodeAudioData(arr);
+            reversedBuffer = makeReversedAudioBuffer(buffer);
+            drawWave(buffer);
+            enableControls();
+          }
+          fileReader.readAsArrayBuffer(blob);
+          return;
+        }
+        reversedBuffer = makeReversedAudioBuffer(buffer);
+        drawWave(buffer);
+        reverseArea.innerHTML = '';
+        const revBtn = document.createElement('button'); revBtn.textContent = '역 재생';
+        revBtn.addEventListener('click', ()=>playBuffer(reversedBuffer));
+        reverseArea.appendChild(revBtn);
+        downloadOrig.classList.remove('hidden'); downloadReverse.classList.remove('hidden');
+        enableControls();
+        // stop tracks
+        stream.getTracks().forEach(t=>t.stop());
+      }
+      mediaRecorder.start();
+      recordBtn.dataset.recording='1';
+      recordBtn.textContent='녹음 중지';
+    }catch(err){
+      alert('녹음 권한이 필요합니다: '+err.message);
+    }
+  });
+
+  // resume AudioContext on interaction (mobile browsers require user gesture)
+  ['click','touchstart'].forEach(evt=>document.addEventListener(evt, ()=>{
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }, {once:true}));
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png">
+  <title>Video Frame Splitter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      height: 100vh;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      position: relative;
+      max-width: 600px;
+      width: 100%;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    #toggleDarkMode {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #toggleDarkMode:hover {
+      background-color: #0056b3;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: bold;
+    }
+    input, select {
+      margin-bottom: 20px;
+      padding: 10px;
+      width: calc(100% - 22px);
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    #processButton {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 30px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #processButton:hover {
+      background-color: #45a049;
+    }
+    #output a {
+      display: inline-block;
+      margin: 5px 0;
+      text-decoration: none;
+      color: #007BFF;
+    }
+    #output a:hover {
+      text-decoration: underline;
+    }
+    #zipLink {
+      display: block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background-color: #459fff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #zipLink:hover {
+      background-color: #0057b3;
+    }
+    #progress {
+      margin: 30px 0;
+      color: #555;
+      font-weight: bold;
+    }
+    canvas {
+      display: none;
+    }
+    .warning {
+      color: red;
+      font-weight: bold;
+      margin-top: 20px;
+      display: none;
+    }
+    .error-message {
+      color: red;
+      font-weight: bold;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid red;
+      border-radius: 8px;
+      background-color: #ffe6e6;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button id="toggleDarkMode" style="display: none;">Toggle Dark Mode</button>
+<!--     <div>
+      <img style="width:15; height:auto;" src="https://playentry.org/uploads/sh/cl/shclly2dlav6tjh7000q075433dudmgy.svg">
+      <h1>Video Frame Splitter</h1>
+    </div> -->
+    <h1>Video Frame Splitter</h1>
+    <input type="file" id="videoInput" accept="video/*">
+    <label for="fpsInput">FPS (Frames Per Second):</label>
+    <input type="number" id="fpsInput" min="15" value="30">
+    <label for="format">Select Format:</label>
+    <select id="format">
+      <option value="png">PNG</option>
+      <option value="jpg">JPG</option>
+      <option value="webp">WEBP</option>
+    </select>
+    <button id="processButton">Process Video</button>
+    <div id="progress">Progress: 0%</div>
+    <div id="error" class="error-message"></div>
+    <div id="output"></div>
+    <footer style="font-size: 12.5px;">엔트리를 사용하는 경우 64 FPS가 적당합니다.</footer>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+  <script>
+    let darkMode = false;
+
+    document.getElementById('toggleDarkMode').addEventListener('click', () => {
+      darkMode = !darkMode;
+      document.body.classList.toggle('dark-mode', darkMode);
+    });
+
+    document.getElementById('processButton').addEventListener('click', async () => {
+      const videoInput = document.getElementById('videoInput');
+      const fps = parseInt(document.getElementById('fpsInput').value, 10);
+      const format = document.getElementById('format').value;
+      const errorDiv = document.getElementById('error');
+
+      errorDiv.style.display = 'none';
+      if (!videoInput.files.length) {
+        errorDiv.textContent = '비디오 파일을 선택해주세요.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      const videoFile = videoInput.files[0];
+      const videoURL = URL.createObjectURL(videoFile);
+      const video = document.createElement('video');
+      video.src = videoURL;
+
+      video.addEventListener('loadeddata', () => {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const output = document.getElementById('output');
+        output.innerHTML = '';
+
+        const maxDuration = 60;
+        if (video.duration > maxDuration) {
+          errorDiv.textContent = '비디오 길이가 허용된 범위를 초과합니다.';
+          errorDiv.style.display = 'block';
+          URL.revokeObjectURL(videoURL);
+          return;
+        }
+
+        const duration = Math.min(video.duration, maxDuration);
+        let currentTime = 0;
+        let frameCount = 0;
+        const zip = new JSZip();
+        const folder = zip.folder("frames");
+        const frameDuration = 1 / fps;
+
+        const captureFrame = () => {
+          if (currentTime >= duration) {
+            video.pause();
+            URL.revokeObjectURL(videoURL);
+            zip.generateAsync({ type: "blob" }).then((content) => {
+              const zipLink = document.createElement('a');
+              zipLink.id = 'zipLink';
+              zipLink.href = URL.createObjectURL(content);
+              zipLink.download = 'frames.zip';
+              zipLink.textContent = 'Download All Frames';
+              output.appendChild(zipLink);
+            });
+            return;
+          }
+
+          video.currentTime = currentTime;
+
+          video.addEventListener('seeked', function onSeeked() {
+            video.removeEventListener('seeked', onSeeked);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+              if (blob) {
+                folder.file(`frame_${frameCount}.${format}`, blob);
+                frameCount++;
+                currentTime += frameDuration; // Increment by frame duration based on FPS
+                document.getElementById('progress').textContent = `Progress: ${((currentTime / duration) * 100).toFixed(2)}%`;
+                captureFrame();
+              } else {
+                errorDiv.textContent = 'Failed to capture frame.';
+                errorDiv.style.display = 'block';
+                return;
+              }
+            }, `image/${format}`);
+          });
+        };
+
+        captureFrame();
+      });
+
+      video.load();
+    });
+  </script>
+</body>
+</html>

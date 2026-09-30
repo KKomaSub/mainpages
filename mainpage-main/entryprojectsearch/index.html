@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png">
+    <title>Entry Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+        .container {
+            text-align: center;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 5px;
+            width: 350px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        iframe {
+            margin-top: 10px;
+            width: 850px;
+            height: 570px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .toggle-container {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-label {
+            font-size: 16px;
+        }
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 15px;
+            transition: 0.4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.4s;
+        }
+        input:checked + .slider {
+            background-color: #007BFF;
+        }
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        .link-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .link-container a {
+            display: inline-block;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #e7f5ff;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .link-container a:hover {
+            background-color: #d0e7ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>엔트리 작품 검색 사이트</h1>
+        <p>검색어와 태그를 입력하세요<br>검색어와 태그는 한번에 검색할 수 없습니다.<br>현재 엔트리 보안 이슈로 iframe이 작동하지 않습니다.</p>
+        <input type="text" id="searchQuery" placeholder="검색어">
+        <input type="text" id="searchTag" placeholder="태그">
+        <button onclick="searchEntry()">검색</button>
+        <div class="toggle-container" style="display: none;">
+            <span class="toggle-label">검색어 및 태그 모두 입력 필수 여부</span>
+            <label class="toggle">
+                <input type="checkbox" id="requireBoth">
+                <span class="slider"></span>
+            </label>
+        </div> 
+        <br>
+        <div class="link-container" id="linkContainer" style="display: none;">
+            <a id="imageLink" href="#" target="_blank">페이지 바로가기</a>
+        </div>
+        <iframe id="entryResults" src="" title="Entry Results"></iframe>
+    </div>
+
+    <script>
+        function searchEntry() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const tag = document.getElementById('searchTag').value.trim();
+            const requireBoth = document.getElementById('requireBoth').checked;
+            const linkContainer = document.getElementById('linkContainer');
+            const imageLink = document.getElementById('imageLink');
+
+            if (requireBoth && (!query || !tag)) {
+                alert('검색어와 태그를 모두 입력해주세요.');
+                return;
+            }
+
+            if (!requireBoth && !query && !tag) {
+                alert('검색어 또는 태그 중 하나를 입력해주세요.');
+                return;
+            }
+
+            if (query && !tag) {
+                var searchUrl = `https://playentry.org/us?query=${query}&tag=projectList`;
+                imageLink.href = searchUrl;
+                imageLink.textContent = "페이지 바로가기";
+                linkContainer.style.display = "block";
+            } else if (tag && !query) {
+                var searchUrl = `https://playentry.org/project/list/tag?tag=${tag}&sort=published&term=all`;
+                imageLink.href = searchUrl;
+                imageLink.textContent = "페이지 바로가기";
+                linkContainer.style.display = "block";
+            } else {
+                var searchUrl = "about:blank"
+                alert('검색어와 태그는 같이 입력할 수 없습니다.')
+            }
+            //} else if (tag && query) {
+            //    const searchUrl = `https://playentry.org/us?query=${query}&tag=${tag}`;
+            //}
+            // Construct the search URL
+            //const searchUrl = `https://playentry.org/us?query=${encodeURIComponent(query)}&tag=${encodeURIComponent(tag)}`;
+
+            // Update the iframe source
+            const iframe = document.getElementById('entryResults');
+            iframe.src = searchUrl;
+        }
+    </script>
+</body>
+</html>

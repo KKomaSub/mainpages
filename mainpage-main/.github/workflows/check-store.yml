@@ -1,0 +1,90 @@
+name: Check Chrome Extension Publish Status
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 1시간마다 정각에 실행
+  workflow_dispatch: # 수동 실행 버튼
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. 리포지토리 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: 2. 파일 비교 (중단 조건 확인)
+        id: pre_check
+        run: |
+          # index.html과 원본 소스 파일의 내용을 비교합니다.
+          # 두 파일이 같으면(diff 결과가 없으면) skip_job을 true로 설정합니다.
+          if cmp -s extensions/index.html extensions/auto_push_html_when_published.html; then
+            echo "파일 내용이 동일합니다. 이미 업데이트가 완료되었으므로 종료합니다."
+            echo "skip_job=true" >> $GITHUB_OUTPUT
+          else
+            echo "파일 내용이 다릅니다. 게시 여부 확인을 진행합니다."
+            echo "skip_job=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 3. Node.js 환경 설정
+        if: steps.pre_check.outputs.skip_job == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 4. Puppeteer 설치
+        if: steps.pre_check.outputs.skip_job == 'false'
+        run: npm install puppeteer
+
+      - name: 5. 스토어 상태 확인 (Puppeteer 실행)
+        if: steps.pre_check.outputs.skip_job == 'false'
+        id: check_store
+        run: |
+          cat << 'EOF' > check.js
+          const fs = require('fs');
+          const puppeteer = require('puppeteer');
+
+          (async () => {
+            let browser;
+            try {
+              browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+              const page = await browser.newPage();
+              
+              await page.goto('https://chromewebstore.google.com/detail/iaenjmlcknibgcnpodbccifjpmilbmmg', { 
+                waitUntil: 'networkidle2',
+                timeout: 60000 
+              });
+
+              const isUnavailable = await page.evaluate(() => {
+                const img = document.querySelector("[src='https://www.gstatic.com/chrome/webstore/images/item_not_available.png']");
+                return img !== null;
+              });
+
+              await browser.close();
+              const isPublished = !isUnavailable;
+              
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `is_published=${isPublished}\n`);
+            } catch (error) {
+              console.error('에러 발생:', error);
+              if (browser) await browser.close();
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `is_published=false\n`);
+            }
+          })();
+          EOF
+          node check.js
+
+      - name: 6. 파일 덮어쓰기 및 푸시
+        # 이전 작업이 skip되지 않았고, 실제로 게시가 확인되었을 때만 실행
+        if: steps.pre_check.outputs.skip_job == 'false' && steps.check_store.outputs.is_published == 'true'
+        run: |
+          cp extensions/auto_push_html_when_published.html extensions/index.html
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git add extensions/index.html
+          git commit -m "확장 프로그램이 크롬 웹스토어 게시되어 자동 감지 push함"
+          git push

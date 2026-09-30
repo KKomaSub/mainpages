@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png">
+  <title>사이트 바로가기</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .site-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    .site-list li {
+      flex: 1 1 auto;
+      text-align: center;
+    }
+    .site-list a {
+      text-decoration: none;
+      color: white;
+      background: #4CAF50;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: background 0.3s;
+      display: inline-block;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    .site-list a:hover {
+      background: #45a049;
+    }
+    footer {
+      color: gray;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="https://i.ibb.co/hJx83Zhy/profile-img.png" alt="Logo" style="width: 120px; height: auto; cursor: pointer;" onclick="location.href='https://playentry.org/profile/6583d1984a600d00255e78bc/project?sort=created&term=all&isOpen=all';">
+    <h1>사이트 바로가기</h1>
+    <ul class="site-list" id="siteList">
+      <!-- 사이트 리스트가 여기에 동적으로 추가됩니다 -->
+    </ul>
+   <br>
+    <footer>플래시 카드 사이트 추가[ 2025-10-19 ]</footer>
+  </div>
+
+  <script>
+   //   { name: "꿈나무위키", url: "https://wiki.kkomaweb.com/" },
+    // 보유 중인 사이트 목록
+    const sites = [
+      { name: "꿈나무위키", url: "https://wiki.kkomaweb.com/" },
+      { name: "영어 플래시 카드", url: "https://card.kkomaweb.com/" },
+      { name: "파일 용량 줄이기", url: "https://kkomaweb.com/filecompression" },
+      { name: "Video FPS Splitter", url: "https://kkomaweb.com/fpsvideodivide" },
+      // { name: "엔트리 태그 검색", url: "http://kkomaweb.com/entryprojectsearch" },
+      { name: "이미지 업로드", url: "https://kkomaweb.com/img" },
+      // { name: "역사 페이지 바로가기", url: "http://webhistory.kro.kr/" },
+      { name: "확장 프로그램", url: "http://kkomaweb.com/extensions" },
+      //{ name: "폼 작성", url: "http://my-form.o-r.kr/" },
+      //{ name: "국제질병분류(ICD)질병 모음", url: "http://icd.o-r.kr/" },
+      { name: "파일 확장자 변환", url: "https://kkomaweb.com/extension-change/" },
+      // { name: "회원가입 시뮬레이션", url: "https://kkomaweb.com/login/" },
+    ];
+    const siteList = document.getElementById('siteList');
+    sites.forEach(site => {
+      const listItem = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = site.url;
+      link.textContent = site.name;
+      link.target = '_blank';
+      listItem.appendChild(link);
+      siteList.appendChild(listItem);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png">
+  <title>파일 용량 줄이기 도구</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      height: 100vh;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    input {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      width: calc(100% - 22px);
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@latest/dist/browser-image-compression.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>파일 용량 줄이기 도구</h1>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <button id="compressButton">압축하기</button>
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    document.getElementById('compressButton').addEventListener('click', async () => {
+      const fileInput = document.getElementById('fileInput');
+      const messageDiv = document.getElementById('message');
+
+      messageDiv.textContent = '';
+
+      if (!fileInput.files.length) {
+        messageDiv.textContent = '압축할 파일을 선택해주세요.';
+        messageDiv.className = 'message error';
+        return;
+      }
+
+      try {
+        messageDiv.textContent = '파일을 처리 중입니다...';
+        messageDiv.className = 'message success';
+
+        const zip = new JSZip();
+
+        for (const file of fileInput.files) {
+          const options = {
+            maxSizeMB: 1, // 최대 파일 크기 (MB)
+            maxWidthOrHeight: 1920, // 최대 이미지 너비 또는 높이
+            useWebWorker: true,
+          };
+
+          const compressedFile = await imageCompression(file, options);
+          zip.file(`compressed_${file.name}`, compressedFile);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(zipBlob);
+        downloadLink.download = 'compressed_files.zip';
+        downloadLink.textContent = '압축된 파일 다운로드';
+        downloadLink.style.display = 'block';
+        downloadLink.style.marginTop = '20px';
+        messageDiv.innerHTML = '';
+        messageDiv.appendChild(downloadLink);
+
+        messageDiv.className = 'message success';
+      } catch (error) {
+        console.error('압축 오류:', error);
+        messageDiv.textContent = '압축 중 오류가 발생했습니다.';
+        messageDiv.className = 'message error';
+      }
+    });
+  </script>
+</body>
+</html>

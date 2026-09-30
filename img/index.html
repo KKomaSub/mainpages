@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png"/>
+  <title>새로운 사이트를 이용하세요</title></title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; background-color:#f4f4f9; }
+    .container {
+      max-width:710px; margin:0 auto; padding:20px;
+      background:#fff; border-radius:10px;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+    h1 { text-align:center; }
+    input[type="file"] {
+      display:block; margin:20px auto; width:90%;
+      padding:10px; border-radius:10px; border:1px solid #ccc;
+    }
+    button {
+      display:block; margin:20px auto;
+      padding:10px 20px; background-color:#007bff;
+      color:white; border:none; border-radius:5px;
+      cursor:pointer;
+    }
+    button:hover { background-color:#0056b3; }
+    .message { text-align:center; margin-top:20px; }
+    .link-container { text-align:center; margin-top:20px; }
+    .link-container a {
+      display:inline-block; margin:10px auto; padding:10px;
+      background-color:#e7f5ff; border-radius:10px;
+      text-decoration:none; color:#007bff; font-weight:bold;
+    }
+    .link-container a:hover { background-color:#d0e7ff; }
+    .copy-button {
+      display:block; margin:10px auto; padding:10px 20px;
+      background-color:#007bff; color:white;
+      border:none; border-radius:5px; cursor:pointer;
+    }
+    .copy-button:hover { background-color:#0056b3; }
+    /* 컨텍스트 메뉴 스타일 */
+    .context-menu {
+      position:absolute; background:#fff;
+      border:1px solid #ccc; border-radius:5px;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+      z-index:1000;
+    }
+    .context-menu-item {
+      padding:8px 12px; cursor:pointer;
+      white-space:nowrap;
+    }
+    .context-menu-item:hover {
+      background:#f0f0f0;
+    }
+    /* 형식 선택 드롭다운 */
+    .format-dropdown {
+      position:absolute; background:#fff;
+      border:1px solid #ccc; border-radius:5px;
+      box-shadow:0 2px 5px rgba(0,0,0,0.2);
+      z-index:1001;
+    }
+    .format-item {
+      padding:6px 10px; cursor:pointer;
+      white-space:nowrap;
+    }
+    .format-item:hover {
+      background:#f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <!-- 업로드 폼 -->
+  <div class="container" id="uploadContainer">
+    <h1>이 이미지 업로드 사이트는 조만간 지원이 종료됩니다.<br><a href="https://img.kkomaweb.com/">새로운 공유 사이트</a>를 이용해 주세요.</h1>
+  </div>
+
+  <!-- 공유 링크 접속 시 이미지 뷰 -->
+  <div class="container" id="displayContainer" style="display:none;">
+    <h1>이 이미지 업로드 사이트는 조만간 지원이 종료됩니다.<br><a href="https://img.kkomaweb.com/">새로운 공유 사이트</a>를 이용해 주세요.</h1>
+  </div>
+
+  <script>
+  </script>
+</body>
+</html>

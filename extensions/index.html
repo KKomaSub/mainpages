@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>확장 프로그램</title>
+<link rel="icon" href="https://i.ibb.co/hJx83Zhy/profile-img.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+  background:#f2f4f7;
+  font-family: 'Noto Sans KR', sans-serif;
+  margin:0;
+}
+header {
+  text-align:center;
+  padding:40px 0 20px;
+  font-size:40px;
+  font-weight:700;
+}
+.container {
+  max-width:900px;
+  margin:0 auto;
+  padding:10px;
+}
+.card {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:white;
+  border-radius:20px;
+  padding:20px;
+  margin-bottom:15px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.1);
+  transition:transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform:translateY(-3px);
+  box-shadow:0 6px 14px rgba(0,0,0,0.15);
+}
+.card img {
+  width:90px;
+  height:90px;
+  border-radius:12px;
+  object-fit:cover;
+  margin-right:15px;
+}
+.text { flex:1; padding:0 20px; }
+.name { font-size:26px; font-weight:700; margin-bottom:6px; }
+.desc { font-size:18px; color:#555; }
+.buttons { display:flex; gap:8px; }
+button {
+  padding:12px 25px;
+  border:none;
+  border-radius:14px;
+  font-size:18px;
+  font-weight:700;
+  cursor:pointer;
+  transition:0.2s;
+}
+.store { background:#007bff; color:white; }
+.store:hover { background:#0062d6; }
+.github { background:#222; color:white; }
+.github:hover { background:black; }
+.disabled { background:#666 !important; cursor:default; opacity:0.5; }
+</style>
+</head>
+
+<body>
+<header>확장 프로그램</header>
+
+<div class="container" id="extensionList"></div>
+
+<script>
+const extensions = [
+  {name:"Mr. Network", desc:"네트워크 트래픽을 가로채서 Burp Suite을 확장 프로그램 하나로 설치할 수 있게 해줍니다!",
+   img:"https://lh3.googleusercontent.com/S-dAsBFu3yDXUgYaUNrqnCI32IVWnI0_aoiOAY5Bfkhah2DIbm4ZrsgBe75y62Q7ZXyU0O408KMoSVrDLFBn8VbtEA=s120",
+   store:"https://chromewebstore.google.com/detail/iaenjmlcknibgcnpodbccifjpmilbmmg?utm_source=item-share-cb",
+   github:null
+  },
+  {name:"엔트리 - 팔취 알림", desc:"팔로우 취소(팔취) 유저를 감지해 알려줍니다.",
+   img:"https://lh3.googleusercontent.com/pj6zxa1HOuzJDb1b40icl8j-oSjTEqK1mFbz7__nDd5Y2qNoiouvFWyKE4iT-4Gp2mbvPAfaD-CTzkcgDNjf1S0wLQ=s120",
+   store:"https://chromewebstore.google.com/detail/%EC%97%94%ED%8A%B8%EB%A6%AC-%ED%8C%94%EC%B7%A8-%EC%95%8C%EB%A6%BC/opojfnmbgoddolmgiliginikincpcind?authuser=0&hl=ko",
+   github:null
+  },
+  {name:"엔트리-어디썼더라?", desc:"엔트리 작품 만들기의 함수 안에 사용된 변수, 리스트를 속성 탭에서 볼 수 있게 해줍니다",
+   img:"https://lh3.googleusercontent.com/LJ3gd4pEwW1h64KjN76f-1Z3tRVE4ZvsXHlrPdT3Oo5XmNPGhUg3evFEt2mIzck9BPoIBdfx3OZFdpI31pH_2kxGlg=s120",
+   store:"https://chromewebstore.google.com/detail/gleeofffiadklgdkffgkapnepghboajb/",
+   github:null
+  },
+  {name:"엔트리-리스트 정상화", desc:"엔트리 리스트 5000개 제한을 풀어줍니다",
+   img:"https://lh3.googleusercontent.com/oJBT1zvxtnbauFwFZIxdWc4mF9CMvRc0PVCWrHwNXmcaKENC1uVy1Bn1x-d_m74tD20zcYyVIw8Lw8LIZs-xTvqT=s120",
+   store:"https://chromewebstore.google.com/detail/%EC%97%94%ED%8A%B8%EB%A6%AC-%EB%A6%AC%EC%8A%A4%ED%8A%B8-%EC%A0%95%EC%83%81%ED%99%94/mpkbnpaddnhchpplmacppckcdaopadjk",
+   github:"https://github.com/KKomaProgrammer/Entry-list-normalization"
+  },
+  {name:"엔트리-클립보드 기록", desc:"엔트리 작품 만들기에서 클립보드 기록을 볼 수 있게 해줍니다.",
+   img:"https://lh3.googleusercontent.com/lqqaDw3xq9-hDJkv7Rjo6no-vMIFKN8GCbtkw2sdTlKJVJExKNOihVQAfVL0CFRe4yrHvWSUyqDMsNf78CwMKsoHgw=s120",
+   store:"https://chromewebstore.google.com/detail/%EC%97%94%ED%8A%B8%EB%A6%AC-%ED%81%B4%EB%A6%BD%EB%B3%B4%EB%93%9C-%EA%B8%B0%EB%A1%9D/cnhioocbfhaleageafhphbdipfnkcoal",
+   github:null
+  },
+  {name:"CodeMJ NO 마이컴파일러", desc:"CodeMJ에 에디터를 추가해 줍니다.",
+   img:"https://lh3.googleusercontent.com/lCsJbCDvpUs_VKL2wbzbcEp6uoTwuY8vrOQU9naVPxrR97A1OUe7iJQ0wq6tdVLv1rBNTGvlmKqmlo3ZQEmpU532=s192-rw",
+   store:"https://chromewebstore.google.com/detail/codemj-no-%EB%A7%88%EC%9D%B4%EC%BB%B4%ED%8C%8C%EC%9D%BC%EB%9F%AC/eckoagfjnppagiihddodgefaopgeepll?authuser=0&hl=ko",
+   github:null
+  },
+  {name:"매직 뷰(Magic View)", desc:"링크 바로가기 미리보기 제공",
+   img:"https://lh3.googleusercontent.com/flskyaJEZeGLRCmMCfYibqciZ-sLVXO2WChh96vNekVxui5jYG4kPMu4QjpkR6Yq9rYmSmpaEjxDmuITHcdyMydf-w=s120",
+   store:"https://chromewebstore.google.com/detail/%EB%A7%A4%EC%A7%81-%EB%B7%B0magic-view/gdnjbhahaolojpdfjjchedncgnmjdmla?authuser=0&hl=ko",
+   github:null
+  },
+  {name:"엔트리-작품 만들기 도우미", desc:"엔트리 작품 만들기 페이지 편의 기능 제공",
+   img:"https://lh3.googleusercontent.com/VyTP1yyNhSmpL_ieQc4pgwjQeun5_V3-038iBYh_r80gVScYhJ05Hoyrx5zNO3oenqaRpEPHXeMYudl6W51ZB6E2rQ=s120",
+   store:"https://chromewebstore.google.com/detail/%EC%97%94%ED%8A%B8%EB%A6%AC-%EC%9E%91%ED%92%88-%EB%A7%8C%EB%93%A4%EA%B8%B0-%EB%8F%84%EC%9A%B0%EB%AF%B8/jkmejnmbcagakflkcmlbgdcojbppooch?authuser=0&hl=ko",
+   github:null
+  },
+  {name:"드래그/복사, 자바스크립트 차단 허용 장치", desc:"드래그 & 복사 & 자바스크립트 허용",
+   img:"https://lh3.googleusercontent.com/b0ZL-ZobbZk06bnNR1N2j6Ra_fGZY-rcwkaY1pCWIZ7w3gMyiTnenGOjUm2fry0zRtW9PSMfwj4fZvJFWjqFBD5-=s120",
+   store:"https://chromewebstore.google.com/detail/ffdgcofngphijlfkjngafhghkdopnhnj?hl=ko",
+   github:"https://github.com/GenerativeAI-openai/drag-copy-javascript_disable-allow"
+  },
+  {name:"엔트리-textMagic(Magic View)", desc:"엔트리에서 간편하게 텍스트를 굵게 & 이탈릭 효과를 적용시킬 수 있습니다.",
+   img:"https://img.bloupla.net/wr4g6Pzs?raw=1",
+   store:"https://chromewebstore.google.com/detail/faolcmnjnefhajpecldmohnohmpcgkao",
+   github:null
+  }
+];
+
+// 렌더링 함수
+function renderExtensions() {
+  const container = document.getElementById("extensionList");
+  extensions.forEach(ext=>{
+    container.innerHTML += `
+      <div class="card">
+        <img src="${ext.img}">
+        <div class="text">
+          <div class="name">${ext.name}</div>
+          <div class="desc">${ext.desc}</div>
+        </div>
+        <div class="buttons">
+          ${ext.store
+            ? `<button class="store" onclick="location.href='${ext.store}'">웹스토어</button>`
+            : `<button class="store disabled" disabled>출시 예정</button>`}
+          ${ext.github
+            ? `<button class="github" onclick="location.href='${ext.github}'">GitHub</button>`
+            : `<button class="github disabled" disabled>No GitHub</button>`}
+        </div>
+      </div>`;
+  });
+}
+
+renderExtensions();
+</script>
+</body>
+</html>
